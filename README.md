@@ -1,316 +1,306 @@
-# Procesador de Imágenes Médicas - Pipeline CLAHE + Filtro Guiado + Unsharp Mask
 
-## Información del Proyecto
 
-**Universidad:** Universidad Politécnica Salesiana  
-**Carrera:** Ingeniería en Computación  
+---
+
+# Protocol Runner para Realce de Imágenes Médicas
+
+## Rev-5 ACCEL – Optimización Experimental y Evaluación Masiva
+
+Este repositorio contiene la implementación del protocolo experimental (**Rev-5**) asociado al manuscrito académico:
+
+**“Mejora estructural de imágenes de radiodiagnóstico, mediante un pipeline secuencial CLAHE – Filtro Guiado – Unsharp en entornos con recursos computacionales limitados”**
+
+El script principal `ups_rev5_protocol_runner_ACCEL.py` implementa un **sistema completo de optimización de hiperparámetros y evaluación masiva**, diseñado para encontrar configuraciones óptimas de realce estructural en imágenes médicas multimodales (RX, Mamografía, Ecografía).
+
+> **Novedad principal (Rev-5 ACCEL):**
+> El cálculo de métricas de calidad de imagen (IQA) ha sido **acelerado por GPU (CUDA)** mediante `torch` y `pyiqa`, utilizando *batch processing*, lo que reduce drásticamente los tiempos de evaluación respecto a versiones previas (Rev-4 y anteriores).
+
+---
+
+## 🚀 Características Principales
+
+* **Dataset multimodal balanceado:**
+  Soporte nativo para:
+
+  * Rayos X (RX)
+  * Mamografía (MAMO)
+  * Ecografía (ECO)
+
+* **Catálogo de pipelines:**
+  Evaluación de **15 pipelines deterministas (P00–P15)** basados en combinaciones de:
+
+  * C → CLAHE
+  * G → Guided Filter
+  * U → Unsharp Mask
+
+* **Evaluación exhaustiva de calidad:**
+  Cálculo de **49 métricas IQA**, organizadas en:
+
+  * Fidelidad estructural
+
+  * Preservación de bordes
+
+  * Ruido y artefactos
+
+  * Costo computacional
+
+  * Métricas de auditoría
+
+  > *Nota:* En Rev-5 se eliminaron `IW_SSIM`, `MedIQA_NR` y `energía_J` por eficiencia computacional.
+
+* **Optimización híbrida en tres etapas:**
+
+  1. **Grid Search**
+  2. **NSGA-II (algoritmo genético multiobjetivo)**
+  3. **Optuna – Bayesian Optimization (TPE)**
+
+* **Sistema de Gates G1–G5:**
+  Compuertas automáticas que descartan configuraciones que violan restricciones críticas de:
+
+  * Fidelidad
+  * Brillo
+  * Ruido
+  * Calidad NR
+  * Costo computacional
+
+* **Arquitectura híbrida CPU/GPU:**
+
+  * Preprocesamiento y filtros → CPU
+  * Métricas IQA pesadas → GPU
+
+---
+
+## 📋 Requisitos Previos
+
+### Sistema
+
+* **Sistema Operativo:** Linux o Windows
+* **Python:** 3.9 o superior (3.10 recomendado)
+
+### Hardware
+
+* **CPU:** Multinúcleo (16+ hilos recomendado)
+* **GPU:** NVIDIA con soporte CUDA (crítico para ACCEL)
+
+  * El modo CPU es posible con `--deploy_cpu_only`, pero **muy lento**
+* **RAM:**
+
+  * 16 GB mínimo
+  * 32 GB o más recomendado para datasets grandes
+
+---
+
+## 📦 Instalación
+
+### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/tu-usuario/tu-repo.git
+cd tu-repo
+```
+
+### 2. Crear entorno e instalar dependencias
+
+```bash
+conda create -n img_enhancement python=3.10
+conda activate img_enhancement
+
+pip install numpy opencv-contrib-python scikit-image scipy pandas \
+            matplotlib psutil pydicom tqdm optuna \
+            pyiqa torch torchvision
+```
+
+> **Importante:**
+> Instala `torch` con soporte CUDA acorde a tu versión.
+> Ver instrucciones oficiales en [https://pytorch.org/](https://pytorch.org/)
+
+---
+
+## 🗂️ Preparación del Dataset
+
+### Opción A – Estructura de carpetas (recomendada)
+
+```text
+/dataset/
+├── RX/
+├── MAMO/
+└── ECO/
+```
+
+### Opción B – Archivo CSV (manifest)
+
+```csv
+path,modality
+/data/img1.png,RX
+/data/img2.dcm,MAMO
+/data/img3.jpg,ECO
+```
+
+---
+
+## ▶️ Ejecución del Protocolo
+
+### Ejecución completa
+
+```bash
+python ups_rev5_protocol_runner_ACCEL.py \
+    --data_root ./mi_dataset \
+    --out_dir ./resultados_run1 \
+    --device cuda \
+    --n_jobs 16
+```
+
+### Ejecución avanzada (pipeline específico)
+
+```bash
+python ups_rev5_protocol_runner_ACCEL.py \
+    --manifest_csv ./datos.csv \
+    --out_dir ./runs/experimento_P10 \
+    --pipelines P10 \
+    --save_outputs \
+    --grid_max 2000 \
+    --ga_pop 50 \
+    --bo_trials 80 \
+    --gpu_batch 64
+```
+
+---
+
+## 📊 Salidas del Sistema
+
+En `out_dir` se generan automáticamente:
+
+1. `evidence_pack/` – Tablas y figuras listas para el manuscrito
+2. `theta_star_all_pipelines.json` – Hiperparámetros óptimos
+3. `per_image_metrics_holdout.csv` – Métricas por imagen
+4. `stats_holdout.csv` – Estadísticos por modalidad
+5. `aggregate_medians_by_pipeline.csv` – Comparativa global
+6. `outputs_examples/` – Imágenes antes/después (opcional)
+
+---
+
+## 🧠 Detalles del Protocolo Rev-5
+
+* **Partición fija:**
+
+  * HPO: 60%
+  * Validación: 20%
+  * Hold-out: 20%
+
+* **Selección final:**
+  El mejor candidato se elige **solo en validación** y se reporta **honestamente** en hold-out.
+
+---
+
+# ============================================
+
+# SEGUNDA PARTE
+
+# Implementación Base del Pipeline (GUI en CPU)
+
+# ============================================
+
+## Procesador de Imágenes Médicas
+
+### Pipeline CLAHE + Filtro Guiado + Unsharp Mask
+
+### Información del Proyecto
+
+**Universidad:** Universidad Politécnica Salesiana
+**Carrera:** Ingeniería en Computación
 **Grupo:** 67
 
-### Miembros del Equipo
-- Andre Alessandro Romero Martínez
-- Daniel Luis Montaleza Ortiz
+**Autores:**
+
+* Andre Alessandro Romero Martínez
+* Daniel Luis Montaleza Ortiz
 
 ---
 
 ## Descripción General
 
-Este proyecto forma parte del desarrollo del artículo académico *"Mejora estructural de imágenes de radiodiagnóstico, mediante un pipeline secuencial CLAHE - Filtro Guiado - Unsharp en entornos con recursos computacionales limitados"*.
+Esta aplicación representa la **implementación base determinista en CPU** del pipeline propuesto en el artículo académico, y constituye el **punto de partida experimental** sobre el cual se construyen:
 
-La aplicación implementa un pipeline determinista de procesamiento de imágenes médicas ejecutable en CPU, diseñado para mejorar la calidad visual de imágenes de radiodiagnóstico (radiografías, mamografías, ecografías) sin requerir hardware especializado.
+* Las grillas de hiperparámetros
+* Los pipelines P00–P15
+* El protocolo Rev-5 ACCEL
 
----
-
-## Características Principales
-
-### Pipeline Secuencial de Tres Etapas
-
-1. **CLAHE (Contrast Limited Adaptive Histogram Equalization)**
-   - Realza el contraste local de la imagen
-   - Parámetros ajustables: Clip Limit y Tile Size
-   - Mejora la visibilidad de estructuras anatómicas
-
-2. **Filtro Guiado (Guided Filter)**
-   - Suaviza la imagen preservando bordes importantes
-   - Parámetros ajustables: Radio y Epsilon
-   - Reduce ruido sin perder detalles diagnósticos
-
-3. **Máscara de Enfoque (Unsharp Mask)**
-   - Realza bordes y detalles finos
-   - Parámetros ajustables: Amount, Radio (Sigma) y Threshold
-   - Mejora la nitidez de estructuras clínicas
-
-### Interfaz Gráfica de Usuario
-
-- **Diseño moderno** con CustomTkinter (tema oscuro)
-- **Panel de control lateral** con controles deslizantes para todos los parámetros
-- **Visualización lado a lado** de imagen original vs procesada
-- **Funcionalidad de zoom** con rueda del mouse y botones dedicados
-- **Métricas en tiempo real**: CPU, RAM, GPU, tiempo de procesamiento
-- **Soporte multi-formato**: JPG, PNG, DICOM
+El sistema permite **exploración manual e interactiva** del espacio θ = {θ_C, θ_G, θ_U} mediante una interfaz gráfica.
 
 ---
 
-## Requisitos del Sistema
+## Pipeline Secuencial
 
-### Dependencias Python
+1. **CLAHE**
+
+   * ClipLimit, TileGridSize
+2. **Filtro Guiado**
+
+   * Radius, Epsilon
+3. **Unsharp Mask**
+
+   * Amount, Sigma, Threshold
+
+---
+
+## Interfaz Gráfica (GUI)
+
+* CustomTkinter (tema oscuro)
+* Sliders en tiempo real
+* Comparación original vs procesada
+* Zoom interactivo
+* Métricas de CPU, RAM, GPU, tiempo
+* Soporte JPG, PNG y DICOM
+
+---
+
+## Requisitos (GUI)
 
 ```bash
-pip install opencv-python
-pip install numpy
-pip install Pillow
-pip install customtkinter
-pip install psutil
-pip install pydicom
-pip install pynvml  # Opcional, para monitoreo GPU NVIDIA
+pip install opencv-python numpy Pillow customtkinter psutil pydicom pynvml
 ```
 
-### Requisitos Mínimos de Hardware
-
-- **CPU:** Procesador de doble núcleo o superior
-- **RAM:** 4 GB (8 GB recomendado)
-- **GPU:** No requerida (opcional para monitoreo)
-- **SO:** Windows, Linux o macOS con Python 3.7+
+* **CPU:** Dual-core o superior
+* **RAM:** 4 GB (8 GB recomendado)
+* **GPU:** No requerida
 
 ---
 
-## Estructura del Código
+## Relación con el Protocolo Rev-5
 
-### Clase Principal: `MedicalImageProcessor`
+Esta implementación corresponde a:
 
-#### Inicialización (`__init__`)
+* Definición del pipeline determinista
+* Validación visual de configuraciones
+* Fundamento del espacio de búsqueda
+* Verificación de viabilidad en CPU
 
-Define los parámetros iniciales del pipeline basados en la investigación:
-
-- **CLAHE:** clipLimit=2, tileSize=8×8
-- **Filtro Guiado:** radius=3, epsilon=1e-2
-- **Unsharp Mask:** amount=0.6, sigma=0.8, threshold=0.0
-
-Estos valores están alineados con las grillas discretas definidas en la metodología del artículo.
-
-#### Métodos Principales
-
-**`load_image()`**
-- Carga imágenes estándar (JPG/PNG) o archivos DICOM
-- Manejo multihilo para archivos DICOM pesados
-
-**`load_dicom()`**
-- Procesa archivos DICOM con pydicom
-- Aplica VOI LUT (Value of Interest Look-Up Table)
-- Normaliza intensidades a rango [0, 255]
-- Maneja fotometría MONOCHROME1/MONOCHROME2
-- Extrae metadatos clínicos relevantes
-
-**`process_image()`**
-- Aplica el pipeline secuencial completo:
-  1. Conversión a espacio LAB para CLAHE
-  2. Aplicación de CLAHE en canal L (luminancia)
-  3. Filtro Guiado para suavizado preservando bordes
-  4. Máscara de Enfoque para realce de detalles
-- Ejecuta en hilo separado para mantener UI responsiva
-- Calcula métricas de rendimiento en tiempo real
-
-**`get_system_metrics()`**
-- Monitorea uso de CPU (%)
-- Registra consumo de RAM (MB)
-- Detecta uso de GPU NVIDIA si está disponible
-- Cuenta núcleos físicos/lógicos e hilos del proceso
-
-**`display_image()`**
-- Renderiza imágenes con zoom adaptativo
-- Centra imágenes en canvas
-- Maneja redimensionamiento con interpolación LANCZOS
+Las funciones avanzadas (optimización, métricas masivas, gates, GPU) **no se ejecutan aquí**, sino en `ups_rev5_protocol_runner_ACCEL.py`.
 
 ---
 
-## Grillas de Parámetros (Basadas en Literatura)
+## Licencia y Contexto Académico
 
-Todas las grillas están fundamentadas en la revisión de literatura del artículo:
+Este software se desarrolla como parte de un **trabajo de titulación** para la obtención del título de **Ingeniero en Ciencias de la Computación**.
 
-### CLAHE
-- **clipLimit:** {1, 2, 3, 4, 6, 8, 12, 16}
-- **tileGridSize:** {(4,4), (6,6), (8,8), (12,12), (16,16), (24,24), (32,32)}
-
-### Filtro Guiado
-- **radius:** {2, 3, 4, 6, 8, 12, 16, 24, 32}
-- **epsilon:** {1e-6, 3e-6, 1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2}
-
-### Unsharp Mask
-- **amount:** {0.1, 0.2, 0.3, 0.6, 1.0, 1.6, 2.0, 2.2}
-- **sigma:** {0.5, 0.8, 1.2, 1.8, 2.5, 3.0, 3.5}
-- **threshold:** {0.0, 0.005, 0.01, 0.02, 0.05, 0.1}
+Los derechos patrimoniales han sido cedidos a la **Universidad Politécnica Salesiana**, conforme al certificado de cesión del **15 de enero de 2026**.
 
 ---
 
-## Uso de la Aplicación
+## Referencia Académica
 
-### Ejecución
-
-```bash
-python medical_processor_gui.py
-```
-
-### Flujo de Trabajo
-
-1. **Cargar imagen:** Botón "Cargar imagen" → seleccionar archivo
-2. **Ajustar parámetros:** Usar sliders para modificar θ_C, θ_G, θ_U
-3. **Observar resultado:** Visualización automática de imagen procesada
-4. **Zoom:** Rueda del mouse o botones +/- para inspeccionar detalles
-5. **Resetear:** Botón "Resetear Parámetros" restaura valores iniciales
-6. **Descargar:** Botón "Descargar Imagen" guarda resultado procesado
-
-### Métricas Mostradas
-
-- **Tiempo de procesamiento** (segundos)
-- **Uso de CPU** (%)
-- **Núcleos:** Físicos/Lógicos
-- **Hilos del proceso** (incluyendo GUI)
-- **Consumo de RAM** (MB)
-- **Uso de GPU** (MB, si disponible)
+> Montaleza Ortiz, L. D., & Romero Martínez, A. A. (2026).
+> *Mejora estructural de imágenes de radiodiagnóstico, mediante un pipeline secuencial CLAHE – Filtro Guiado – Unsharp en entornos con recursos computacionales limitados*.
+> Universidad Politécnica Salesiana.
 
 ---
 
-## Procesamiento de Imágenes DICOM
+Si deseas, en el siguiente paso puedo:
 
-### Metadatos Extraídos
-
-- Nombre del paciente
-- Fecha del estudio
-- Modalidad (RX, CT, MR, etc.)
-- Dimensiones (filas × columnas)
-- Window Center/Width
-- Interpretación fotométrica
-- Bits asignados
-- Transfer Syntax UID
-
-### Normalización de Intensidades
-
-```python
-# Aplicación de ventana (windowing)
-min_val = windowCenter - windowWidth / 2
-max_val = windowCenter + windowWidth / 2
-
-# Normalización a [0, 255]
-pixel_array = ((pixel_array - min_val) / (max_val - min_val)) * 255
-```
-
-### Manejo de Fotometría
-
-- **MONOCHROME2:** Valores altos = brillante (estándar)
-- **MONOCHROME1:** Valores altos = oscuro → se invierte
-
----
-
-## Arquitectura de Procesamiento
-
-### Pipeline Matemático
-
-**Etapa 1 - CLAHE:**
-```
-I_rgb → I_lab → CLAHE(L, clipLimit, tileSize) → I_clahe
-```
-
-**Etapa 2 - Filtro Guiado:**
-```
-I_clahe → GuidedFilter(I_clahe, radius, ε) → I_filtered
-```
-
-**Etapa 3 - Unsharp Mask:**
-```
-I_blurred = GaussianBlur(I_filtered, σ)
-I_sharpened = I_filtered + α * (I_filtered - I_blurred) if |diff| > τ_u
-```
-
-### Optimización de Rendimiento
-
-- **Procesamiento asíncrono:** Threading para operaciones pesadas
-- **Debouncing:** Delay de 300ms en sliders para evitar procesamiento excesivo
-- **Normalización eficiente:** Operaciones vectorizadas con NumPy
-- **Memoria controlada:** Liberación explícita de imágenes intermedias
-
----
-
-## Relación con el Artículo Académico
-
-Este código implementa:
-
-- **Sección 3.1:** Pipeline secuencial determinista (θ* = θ_C, θ_G, θ_U)
-- **Tabla 2:** Espacio de hiperparámetros con grillas discretas
-- **Figura 2:** Flujo de procesamiento completo
-- **Bloque D (Tabla 3):** Métricas de costo computacional (tiempo, RAM, CPU)
-
-El panel de control permite:
-- Exploración manual del espacio θ
-- Validación visual de configuraciones candidatas
-- Análisis de trade-offs contraste-ruido-nitidez
-- Verificación de viabilidad en CPU sin GPU
-
----
-
-## Limitaciones y Consideraciones
-
-### Almacenamiento Persistente
-
-⚠️ **ADVERTENCIA:** Este código **NO utiliza** `localStorage` ni `sessionStorage` (APIs de navegador no disponibles en aplicaciones de escritorio).
-
-Toda la información se mantiene en memoria durante la sesión. Si se requiere persistencia:
-- Implementar guardado/carga de configuraciones en archivos JSON
-- Usar bases de datos locales (SQLite)
-- Serializar estado con Pickle
-
-### Manejo de Errores DICOM
-
-Algunos archivos DICOM pueden fallar por:
-- Transfer Syntax no soportado por pydicom
-- Pixel data comprimido (JPEG 2000, RLE)
-- Metadatos faltantes o corruptos
-
-Solución: Usar `force=True` en `pydicom.dcmread()` y manejo de excepciones robusto.
-
-### Rendimiento en Imágenes Grandes
-
-Para imágenes >4MP (p.ej., mamografías digitales):
-- El procesamiento puede tomar 2-5 segundos en CPU modesta
-- Considerar downsampling previo para preview interactivo
-- La GUI permanece responsiva gracias al threading
-
----
-
-## Trabajo Futuro
-
-- [ ] Integración de optimización de hiperparámetros (Grid + GA + BO)
-- [ ] Cálculo automático de 49 métricas (FR/NR/ROI)
-- [ ] Comparación con los 15 pipelines del catálogo
-- [ ] Evaluación MOS integrada con interfaz para radiólogos
-- [ ] Exportación de reportes con métricas detalladas
-- [ ] Modo batch para procesamiento de múltiples imágenes
-- [ ] Implementación de gates de seguridad perceptual
-
----
-
-## Contacto y Contribuciones
-
-Este proyecto es parte de un trabajo de titulación académico. Para consultas técnicas o colaboraciones:
-
-- **Autores:** Andre Alessandro Romero Martínez, Daniel Luis Montaleza Ortiz
-- **Tutor:** Joe Frand Llerena Izquierdo
-- **Institución:** Universidad Politécnica Salesiana - Sede Guayaquil
-- **Año:** 2026
-
----
-
-## Licencia
-
-Este software se desarrolla con fines académicos como parte del trabajo de titulación para obtener el título de Ingeniero en Ciencias de la Computación.
-
-Los derechos patrimoniales han sido cedidos a la Universidad Politécnica Salesiana según certificado de cesión del 15 de enero de 2026.
-
----
-
-## Referencias
-
-Para la fundamentación teórica y metodológica completa, consultar el artículo académico adjunto:
-
-> Montaleza Ortiz, L. D., & Romero Martínez, A. A. (2026). *Mejora estructural de imágenes de radiodiagnóstico, mediante un pipeline secuencial CLAHE - Filtro Guiado - Unsharp en entornos con recursos computacionales limitados*. Universidad Politécnica Salesiana.
+* Ajustar el README para **repositorio público vs privado**
+* Crear una **versión corta para reviewers**
+* Generar el **`CITATION.cff`**
+* Alinear exactamente los nombres con las **secciones del artículo**
 
 ---
 
