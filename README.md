@@ -277,6 +277,10 @@ Esta implementación corresponde a:
 
 Las funciones avanzadas (optimización, métricas masivas, gates, GPU) **no se ejecutan aquí**, sino en `ups_rev5_protocol_runner_ACCEL.py`.
 
+Adjunto carpeta que aloja el ejecutable para windows
+https://drive.google.com/drive/folders/17KC4sAZsb7sfvumtachd6ZN2X2g9SgFc?usp=sharing
+
+
 ---
 
 ## Licencia y Contexto Académico
@@ -304,4 +308,3 @@ Si deseas, en el siguiente paso puedo:
 
 ---
 
-**Nota:** Este README documenta la implementación práctica del pipeline propuesto. Los resultados experimentales, métricas de evaluación y análisis comparativos se reportan en el artículo académico completo.
