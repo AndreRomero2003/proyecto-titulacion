@@ -144,7 +144,7 @@ class MedicalImageProcessor4Core(ctk.CTk):
 
     def create_sliders(self):
         # CLAHE - clipLimit
-        ctk.CTkLabel(self.scrollable_frame, text="CLAHE", font=("Arial", 12, "bold")).pack(anchor="w", padx=10, pady=(10,0))
+        ctk.CTkLabel(self.scrollable_frame, text="CLARIDAD/CONTRASTE", font=("Arial", 12, "bold")).pack(anchor="w", padx=10, pady=(10,0))
         self.clahe_clip_slider = ctk.CTkSlider(
             self.scrollable_frame,
             from_=0, to=len(self.clip_grid)-1,
@@ -169,7 +169,7 @@ class MedicalImageProcessor4Core(ctk.CTk):
         self.clahe_tile_label.pack(anchor="w", padx=20)
         
         # Filtro Guiado - radius
-        ctk.CTkLabel(self.scrollable_frame, text="Filtro Guiado", font=("Arial", 12, "bold")).pack(anchor="w", padx=10, pady=(10,0))
+        ctk.CTkLabel(self.scrollable_frame, text="SUAVIZADO", font=("Arial", 12, "bold")).pack(anchor="w", padx=10, pady=(10,0))
         self.guided_radius_slider = ctk.CTkSlider(
             self.scrollable_frame,
             from_=0, to=len(self.radius_grid)-1,
@@ -194,7 +194,7 @@ class MedicalImageProcessor4Core(ctk.CTk):
         self.guided_eps_label.pack(anchor="w", padx=20)
         
         # Unsharp Mask - amount
-        ctk.CTkLabel(self.scrollable_frame, text="Unsharp Mask", font=("Arial", 12, "bold")).pack(anchor="w", padx=10, pady=(10,0))
+        ctk.CTkLabel(self.scrollable_frame, text="NITIDEZ/DETALLE", font=("Arial", 12, "bold")).pack(anchor="w", padx=10, pady=(10,0))
         self.unsharp_amount_slider = ctk.CTkSlider(
             self.scrollable_frame,
             from_=0, to=len(self.amount_grid)-1,
@@ -683,4 +683,5 @@ if __name__ == "__main__":
     
     app = MedicalImageProcessor4Core()
     app.mainloop()
+
 
