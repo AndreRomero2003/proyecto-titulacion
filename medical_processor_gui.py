@@ -45,10 +45,10 @@ class MedicalImageProcessor4Core(ctk.CTk):
         self.clip_grid = [1, 2, 3, 4, 6, 8, 12, 16]  # CLAHE clipLimit
         self.tile_grid = [(4,4), (6,6), (8,8), (12,12), (16,16), (24,24), (32,32)]  # CLAHE tileGridSize
         self.radius_grid = [1, 3, 4, 6, 8, 12, 16, 24, 32]  # Filtro Guiado radius
-        self.eps_grid = [1e-6, 3e-6, 1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2]  # Filtro Guiado epsilon
-        self.amount_grid = [0.0, 0.2, 0.3, 0.6, 1.0, 1.6, 2.0, 2.2]  # Unsharp Mask amount
-        self.sigma_grid = [0.5, 0.8, 1.2, 1.8, 2.5, 3.0, 3.5]  # Unsharp Mask sigma
-        self.threshold_grid = [0.1, 0.005, 0.01, 0.02, 0.05, 0.1]  # Unsharp Mask threshold
+        self.eps_grid = [1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 3e-6, 1e-6]  # Filtro Guiado epsilon
+        self.amount_grid = [1, 1.25, 1.5, 1.75, 2.0, 2.1, 2.2]  # Unsharp Mask amount
+        self.sigma_grid = [1.2, 1.5, 1.8, 2, 2.5, 3.0, 3.5]  # Unsharp Mask sigma
+        self.threshold_grid = [0.1, 0.075, 0.05, 0.025, 0.01, 0.0075, 0.005] # Unsharp Mask threshold estas eran las 4 líneas q faltaban
         
         # Parámetros iniciales
         self.clahe_clip_limit = self.clip_grid[1]  # 2
