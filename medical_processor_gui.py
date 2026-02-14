@@ -48,7 +48,7 @@ class MedicalImageProcessor4Core(ctk.CTk):
         self.eps_grid = [1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 3e-6, 1e-6]  # Filtro Guiado epsilon
         self.amount_grid = [1, 1.25, 1.5, 1.75, 2.0, 2.1, 2.2]  # Unsharp Mask amount
         self.sigma_grid = [1.2, 1.5, 1.8, 2, 2.5, 3.0, 3.5]  # Unsharp Mask sigma
-        self.threshold_grid = [0.1, 0.075, 0.05, 0.025, 0.01, 0.0075, 0.005] # Unsharp Mask threshold estas eran las 4 líneas q faltaban
+        self.threshold_grid = [0.1, 0.075, 0.05, 0.025, 0.01, 0.0075, 0.005] # Unsharp Mask threshold estas eran las 4 líneas que faltaban
         
         # Parámetros iniciales
         self.clahe_clip_limit = self.clip_grid[1]  # 2
@@ -683,5 +683,6 @@ if __name__ == "__main__":
     
     app = MedicalImageProcessor4Core()
     app.mainloop()
+
 
 
